@@ -1,5 +1,7 @@
 using ASP.Serilog.Services;
+using Microsoft.AspNetCore.Diagnostics;
 using Serilog;
+using System.Net;
 
 internal class Program
 {
@@ -27,6 +29,22 @@ internal class Program
             builder.Services.AddTransient<IDummyService, DummyService>();
 
             var app = builder.Build();
+
+            //middleware exceptions
+            app.UseExceptionHandler(options =>
+            {
+                options.Run(async context =>
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    context.Response.ContentType = "application/json";
+                    var exception = context.Features.Get<IExceptionHandlerFeature>();
+                    if (exception != null)
+                    {
+                        var message = $"{exception.Error.Message}";
+                        await context.Response.WriteAsync(message).ConfigureAwait(false);
+                    }
+                });
+            });
 
             //minimal endpoints
             app.MapGet("/", (IDummyService svc) => svc.DoSomething());
