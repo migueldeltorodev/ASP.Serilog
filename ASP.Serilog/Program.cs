@@ -1,3 +1,4 @@
+using ASP.Serilog.Services;
 using Serilog;
 
 internal class Program
@@ -12,6 +13,7 @@ internal class Program
         {
             Log.Information("starting server.");
             var builder = WebApplication.CreateBuilder(args);
+            //using Serilog
             builder.Host.UseSerilog((context, loggerConfiguration) =>
             {
                 loggerConfiguration.WriteTo.Console();
@@ -21,8 +23,13 @@ internal class Program
             // Add services to the container.
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            //add custom services
+            builder.Services.AddTransient<IDummyService, DummyService>();
 
             var app = builder.Build();
+
+            //minimal endpoints
+            app.MapGet("/", (IDummyService svc) => svc.DoSomething());
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -32,6 +39,7 @@ internal class Program
             }
 
             app.UseHttpsRedirection();
+            app.UseSerilogRequestLogging();
             app.Run();
         }
         catch (Exception ex)
